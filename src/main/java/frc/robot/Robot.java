@@ -6,6 +6,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
@@ -24,32 +25,27 @@ public class Robot extends TimedRobot {
   XboxController m_controller = new XboxController(0);
 
   Spark m_intakeLeft = new Spark(0);
-  Spark m_intakeRight = new Spark (1);
-  Spark m_deepcage = new Spark (2);
+  Spark m_intakeRight = new Spark(1);
+  Spark m_deepcage = new Spark(2);
 
   PWMSparkMax m_elevator1 = new PWMSparkMax(3);
   PWMSparkMax m_elevator2 = new PWMSparkMax(4);
 
-  private final MecanumDrive m_robotDrive;
+  WPI_VictorSPX frontLeft = new WPI_VictorSPX(kFrontLeftChannel);
+  WPI_VictorSPX rearLeft = new WPI_VictorSPX(kRearLeftChannel);
+  WPI_VictorSPX frontRight = new WPI_VictorSPX(kFrontRightChannel);
+  WPI_VictorSPX rearRight = new WPI_VictorSPX(kRearRightChannel);
+
+  private final MecanumDrive m_robotDrive = new MecanumDrive(frontLeft, rearLeft, frontRight, rearRight);
 
   Timer timer = new Timer();
 
-
-
   /** Called once at the beginning of the robot program. */
-  public Robot() {
-    WPI_VictorSPX frontLeft = new WPI_VictorSPX(kFrontLeftChannel);
-    WPI_VictorSPX rearLeft = new WPI_VictorSPX(kRearLeftChannel);
-    WPI_VictorSPX frontRight = new WPI_VictorSPX(kFrontRightChannel);
-    WPI_VictorSPX rearRight = new WPI_VictorSPX(kRearRightChannel);
-
-    // Invert the right side motors.
-    // You may need to change or remove this to match your robot.
+  @Override
+  public void robotInit() {
+    CameraServer.startAutomaticCapture();
     frontRight.setInverted(true);
     rearRight.setInverted(true);
-
-    m_robotDrive = new MecanumDrive(frontLeft, rearLeft, frontRight, rearRight);
-
   }
 
 
@@ -90,19 +86,21 @@ public class Robot extends TimedRobot {
     double xSpeed = m_controller.getRightY();
     double ySpeed = m_controller.getRightX();
     double zRotation = m_controller.getLeftX();
+
+    boolean intakeButton = m_controller.getYButton(); 
+    boolean elevatorButton1 = m_controller.getAButtonPressed(); 
+    boolean elevatorButton2 = m_controller.getBButtonPressed();
+    boolean revelevatorButton = m_controller.getXButton();
+    boolean deepcageButton = m_controller.getStartButtonPressed(); 
+    boolean troughButton = m_controller.getBackButtonPressed();
+
     m_robotDrive.driveCartesian(xSpeed * 0.25, -ySpeed * 0.25, zRotation * 0.25);
-
-
-    boolean intakeButton = m_controller.getYButton();
-    boolean elevatorButton1 = m_controller.getLeftBumperButtonPressed(); //get rid of the Pressed part if changing to button being held
-    boolean elevatorButton2 = m_controller.getRightBumperButtonPressed();
-    boolean revelevatorButton1 = m_controller.getBButtonPressed();
-    boolean revelevatorButton2 = m_controller.getAButtonPressed();
-    boolean deepcageButton = m_controller.getXButtonPressed();
     
     if (intakeButton) { //might need to change direction
-     m_intakeLeft.set(.75);  
-     m_intakeRight.set(-1);
+      m_intakeLeft.set(0.75);  
+      m_intakeRight.set(-1);
+    }
+    else {
       m_intakeLeft.set(0);
       m_intakeRight.set(0);
     }
@@ -110,50 +108,55 @@ public class Robot extends TimedRobot {
     if (elevatorButton1) {
       timer.reset();
       timer.start();
-      if (timer.get() < 0.5){
-      m_elevator1.set(.75);
-      m_elevator2.set(-.75);
-    }
-     else if (revelevatorButton1) {
-      timer.reset();
-      timer.start();
-      if (timer.get() < 0.5){
-      m_elevator1.set(-.75);
-      m_elevator2.set(-.75);
+      if (timer.get() < 3.0) {
+      m_elevator1.set(0.75);
+      m_elevator2.set(-0.75);
       }
-    } 
-    else {
+    } else if (revelevatorButton) {
+     /*/ timer.reset();
+      timer.start();
+      if (timer.get() < 0.5){ */
+      m_elevator1.set(-0.75);
+      m_elevator2.set(-0.75);
+    } else {
       m_elevator1.set(0);
       m_elevator2.set(0);
     }
-  }
 
     if (elevatorButton2){
       timer.reset();
       timer.start();
-    } if (timer.get() < 1 ){
-      m_elevator1.set(.75); }
-      else if (revelevatorButton2) {
-        timer.reset();
-        timer.start();
-        if (timer.get() < 1 ) {
-        m_elevator1.set(-.75);
-        m_elevator2.set(-.75);
-        }
+      if (timer.get() < 3.5 ){
+        m_elevator1.set(0.75); 
       }
-      else {
+    } else if (revelevatorButton) {
+       /*  timer.reset();
+        timer.start();
+        if (timer.get() < 1 ) {  */
+        m_elevator1.set(-0.75);
+        m_elevator2.set(-0.75);
+    } else {
         m_elevator1.set(0);
         m_elevator2.set(0);
-      }
+    }
 
     if (deepcageButton){
-      m_deepcage.set(.75);
+      m_deepcage.set(0.75);
     } else {
       m_deepcage.set(0);
     }
 
+    if (troughButton){
+      timer.reset();
+      timer.start();
+      if(timer.get() < 2.0){
+        m_elevator1.set(0.75);
+        m_elevator2.set(0.75);
+      }
+    } else {
+        m_elevator1.set(0);
+        m_elevator2.set(0);
     }
 
+  }
 }
-
-//test commit
